@@ -41,8 +41,9 @@ processors:
       from_attribute: file.name
  
 exporters:
+  debug:
   file/no_rotation:
-    path: /tmp/otelcol-contrib.log
+    path: /logs/otel.log
   prometheus:
     endpoint: "0.0.0.0:58888"
     send_timestamps: true
@@ -55,6 +56,9 @@ exporters:
       insecure: true
  
 service:
+  telemetry:
+    logs:
+      level: "debug"
   pipelines:
     metrics:
       receivers: [otlp,otlp/mtls]
@@ -63,6 +67,6 @@ service:
     logs:
       receivers: [otlp,otlp/mtls]
       processors: [attributes]
-      exporters: [file/no_rotation, loki]
+      exporters: [debug, file/no_rotation, loki]
  
   extensions: [health_check, pprof, zpages]
