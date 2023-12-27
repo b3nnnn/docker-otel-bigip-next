@@ -26,8 +26,8 @@ services:
       
        volumes:
          - ./otel/otel-collector-config.yaml:/etc/otel-collector-config.yaml
-         - ./otel/log.txt:/tmp/otelcol-contrib.log
          - certs:/certs
+         - ./log/otel.log
        ports:
          - 1888:1888 # pprof extension
 #         - 8888:8888 # Prometheus metrics exposed by the Collector
