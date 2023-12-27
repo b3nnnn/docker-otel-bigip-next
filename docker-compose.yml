@@ -1,0 +1,42 @@
+version: '3.7'
+
+services:
+    init-tls-keys:
+      # Dont do this in anything other than a demo there are much better ways to do key management.
+       image: paulczar/omgwtfssl
+       init: true
+       command: ash -c 'if [ -e "/certs/ssl.key" ]; then echo "TLS stuff already exists - exiting"; else echo "Initializing certs..."; /usr/local/bin/generate-certs && chown -R 10001 /certs; fi'
+       volumes:
+         - certs:/certs
+       environment:
+         - SSL_SUBJECT=
+         - CA_SUBJECT=
+         - CA_CERT=/certs/ca.crt
+         - SSL_KEY=/certs/ssl.key
+         - SSL_CSR=/certs/ssl.csr
+         - SSL_CERT=/certs/ssl.crt
+       
+    otel-collector:
+       image: otel/opentelemetry-collector-contrib:latest
+       restart: always
+       command: ["--config=/etc/otel-collector-config.yaml"]
+       depends_on:
+         init-tls-keys:
+             condition: service_started
+      
+       volumes:
+         - ./otel/otel-collector-config.yaml:/etc/otel-collector-config.yaml
+         - ./otel/log.txt:/tmp/otelcol-contrib.log
+         - certs:/certs
+       ports:
+         - 1888:1888 # pprof extension
+#         - 8888:8888 # Prometheus metrics exposed by the Collector
+#    - 8889:8889 # Prometheus exporter metrics
+         - 13133:13133 # health_check extension
+         - 4317:4317 # OTLP gRPC receiver
+         - 4318:4318 # OTLP http receiver
+         - 55679:55679 # zpages extension
+
+
+volumes:
+  certs:

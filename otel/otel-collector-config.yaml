@@ -1,0 +1,68 @@
+extensions:
+  health_check:
+  pprof:
+    endpoint: 0.0.0.0:1777
+  zpages:
+    endpoint: 0.0.0.0:55679
+ 
+receivers:
+  otlp:
+    protocols:
+      grpc:
+      http:
+  otlp/mtls:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:54317
+        tls:
+          client_ca_file: /certs/ca.crt
+          cert_file: /certs/ssl.crt
+          key_file: /certs/ssl.key
+  prometheus:
+    config:
+      scrape_configs:
+      - job_name: 'otel-collector'
+        scrape_interval: 10s
+        static_configs:
+        - targets: ['0.0.0.0:8888']
+ 
+processors:
+  batch:
+  attributes:
+    actions:
+    - action: insert
+      key: system_type
+      value: "next"
+    - action: insert
+      key: loki.attribute.labels
+      value: file_name, system_type
+    - action: insert
+      key: file_name
+      from_attribute: file.name
+ 
+exporters:
+  file/no_rotation:
+    path: /tmp/otelcol-contrib.log
+  prometheus:
+    endpoint: "0.0.0.0:58888"
+    send_timestamps: true
+    metric_expiration: 180m
+    resource_to_telemetry_conversion:
+      enabled: true
+  loki:
+    endpoint: http://localhost:3100/loki/api/v1/push
+    tls:
+      insecure: true
+ 
+service:
+  pipelines:
+    metrics:
+      receivers: [otlp,otlp/mtls]
+      processors: [batch]
+      exporters: [prometheus]
+    logs:
+      receivers: [otlp,otlp/mtls]
+      processors: [attributes]
+      exporters: [file/no_rotation, loki]
+ 
+  extensions: [health_check, pprof, zpages]
