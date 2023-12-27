@@ -24,7 +24,7 @@ receivers:
       - job_name: 'otel-collector'
         scrape_interval: 10s
         static_configs:
-        - targets: ['0.0.0.0:8888']
+        - targets: ['0.0.0.0:18888']
  
 processors:
   batch:
@@ -45,7 +45,7 @@ exporters:
   file/no_rotation:
     path: /logs/otel.log
   prometheus:
-    endpoint: "0.0.0.0:58888"
+    endpoint: 0.0.0.0:18889
     send_timestamps: true
     metric_expiration: 180m
     resource_to_telemetry_conversion:
@@ -56,9 +56,6 @@ exporters:
       insecure: true
  
 service:
-  telemetry:
-    logs:
-      level: "debug"
   pipelines:
     metrics:
       receivers: [otlp,otlp/mtls]
